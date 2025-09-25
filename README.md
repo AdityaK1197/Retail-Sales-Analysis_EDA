@@ -26,6 +26,7 @@ Data Source: CSV file (Retail Sales Transactions)
 
 
 # Retail Sales Analysis_EDA/
+
 ├── sql/
 │   ├── 01_create_db_and_tables.sql
 │   ├── 02_bulk_insert_staging.sql
