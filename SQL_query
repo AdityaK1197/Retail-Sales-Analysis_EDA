@@ -1,0 +1,215 @@
+---------------------------------------------------------------------------------
+-- PHASE 1: ETL Process
+---------------------------------------------------------------------------------
+---------------------------------------------------------------------------------
+-- Step 1: Use the target database (create it if needed)
+---------------------------------------------------------------------------------
+--USE MASTER
+--GO
+--CREATE DATABASE retail_sales_analysis
+--GO
+
+USE retail_sales_analysis;
+GO
+
+---------------------------------------------------------------------------------
+-- Step 2: Drop the staging/raw table if it already exists
+---------------------------------------------------------------------------------
+IF OBJECT_ID('mastertable','U') IS NOT NULL
+    DROP TABLE mastertable;
+
+---------------------------------------------------------------------------------
+-- Step 3: Create staging/raw table (mastertable)
+-- This table will temporarily hold raw data from the CSV
+---------------------------------------------------------------------------------
+CREATE TABLE mastertable (
+    transactions_id NVARCHAR(50),
+    sale_date DATE,
+    sale_time TIME,
+    customer_id NVARCHAR(50),
+    gender VARCHAR(20),
+    age INT,
+    category VARCHAR(20),
+    quantiy FLOAT,             -- Note: column name is 'quantiy' (typo in source file)
+    price_per_unit FLOAT,
+    cogs FLOAT,
+    total_sale FLOAT
+);
+
+---------------------------------------------------------------------------------
+-- Step 4: Load raw data from CSV into staging table (mastertable)
+-- Adjust CODEPAGE value depending on CSV encoding
+---------------------------------------------------------------------------------
+BULK INSERT mastertable 
+FROM '[file location]Retail Sales Analysis_utf .csv'
+WITH (
+    FIRSTROW = 2,              -- Skip header row
+    FIELDTERMINATOR = ',',     -- CSV delimiter
+    TABLOCK,                   -- Faster bulk load
+    CODEPAGE = '0XX0a'         -- Encoding (verify correct codepage)
+);
+
+---------------------------------------------------------------------------------
+-- Step 5: Drop gold table if it already exists
+---------------------------------------------------------------------------------
+IF OBJECT_ID('gold_mastertable','U') IS NOT NULL
+    DROP TABLE gold_mastertable;
+
+---------------------------------------------------------------------------------
+-- Step 6: Create gold/cleaned table
+-- This table will store cleaned and standardized data
+---------------------------------------------------------------------------------
+CREATE TABLE gold_mastertable (
+    transactions_id NVARCHAR(50),
+    sale_date DATE,
+    sale_time TIME,
+    customer_id NVARCHAR(50),
+    gender VARCHAR(20),
+    age INT,
+    category VARCHAR(20),
+    quantity FLOAT,             -- Corrected spelling of column
+    price_per_unit FLOAT,
+    cogs FLOAT,
+    total_sale FLOAT
+);
+
+---------------------------------------------------------------------------------
+-- Step 7: Load cleaned data into gold_mastertable
+-- Null ages are replaced with average age from the staging table
+---------------------------------------------------------------------------------
+INSERT INTO gold_mastertable (
+    transactions_id,
+    sale_date,
+    sale_time,
+    customer_id,
+    gender,
+    age,
+    category,
+    quantity,
+    price_per_unit,
+    cogs,
+    total_sale
+)
+SELECT
+    transactions_id,
+    sale_date,
+    sale_time,
+    customer_id,
+    gender,
+    ISNULL(age, (SELECT AVG(age*1.0) FROM mastertable WHERE age IS NOT NULL)) AS age, -- Replace null age with avg
+    category,
+    quantiy,           -- Still coming from raw source
+    price_per_unit,
+    cogs,
+    total_sale
+FROM mastertable;
+
+---------------------------------------------------------------------------------
+-- Step 8: Delete records with missing critical fact data
+-- Removes rows where key numeric values are NULL
+---------------------------------------------------------------------------------
+DELETE FROM gold_mastertable
+WHERE category IS NULL
+   OR quantity IS NULL
+   OR price_per_unit IS NULL
+   OR cogs IS NULL
+   OR total_sale IS NULL;
+
+---------------------------------------------------------------------------------
+-- PHASE 2: Exploratory Data Analysis (EDA)
+---------------------------------------------------------------------------------
+
+  --Q1. Write a SQL query to retrieve all columns for sales made on '2022-11-05':
+
+     select * from gold_mastertable
+	 where sale_date = '2022-11-05'
+
+  --Q2. Write a SQL query to retrieve all transactions where the category is 'Clothing' and the quantity sold is more than 4 in the month of Nov-2022:
+     
+	 select * from gold_mastertable
+	 where sale_date between '2022-11-01' and '2022-11-30'
+	 and
+	 quantity >= 4
+	 and
+	 category = 'Clothing'
+		
+  --Q3. Write a SQL query to calculate the total sales (total_sale) for each category:
+
+	  select category,sum(total_sale) as 'TotalSales' 
+	  from gold_mastertable
+	  GROUP BY category
+	  order by 2 desc;
+
+  --Q4. Write a SQL query to find the average age of customers who purchased items from the 'Beauty' category:
+
+		select category, avg(age)  as 'avg Age'
+		FROM gold_mastertable
+		group by category
+
+  --Q5. Write a SQL query to find all transactions where the total_sale is greater than 1000:
+
+		select* from gold_mastertable
+		where 
+		total_sale > 1000
+
+  --Q6. Write a SQL query to find the total number of transactions (transaction_id) made by each gender in each category:
+
+		select 
+		category,
+		Gender,
+		count(transactions_id) as 'Transactioncount'
+		from gold_mastertable
+		group by category,gender
+
+  --Q7. Write a SQL query to calculate the average sale for each month. Find out best selling month in each year:
+  GO
+
+	with avgmonthlysales as (
+		select
+		YEAR(sale_date) as 'Saleyear', 
+		MONTH(sale_date) as 'Salemonth',
+		ROUND(AVG(total_sale),2) as 'AvgSales',
+		ROW_NUMBER() over (order by ROUND(AVG(total_sale),2) desc) as rn
+		from gold_mastertable
+		group by YEAR(sale_date),
+				MONTH(sale_date) 
+				)
+		select * from avgmonthlysales where rn <= 2
+
+  --Q8. Write a SQL query to find the top 5 customers based on the highest total sales:
+
+	SELECT 
+	TOP 5
+	customer_id,
+	SUM(total_sale) as 'TotalSales'
+	FROM gold_mastertable
+	GROUP BY customer_id
+	order by TotalSales desc;
+
+  --Q9. Write a SQL query to find the number of unique customers who purchased items from each category:
+
+   select
+  category,
+  (COUNT(DISTINCT(customer_id))) as 'Unique Order Count'
+  from gold_mastertable
+  group by category
+
+  --Q10. Write a SQL query to create each shift and number of orders (Example Morning <12, Afternoon Between 12 & 17, Evening >17):
+
+  GO
+
+  with shifttimes as ( select 
+  *,
+  CASE
+	WHEN datepart(HOUR,sale_time) < '12' then 'Morning'
+	WHEN datepart(HOUR,sale_time) between 12 and 17 then 'Afternoon'
+  ELSE 'Evening' END as 'shifttype'
+  from 
+  gold_mastertable
+  )
+  select 
+  shifttype,
+  count(transactions_id) as 'ordercount'
+  from shifttimes
+  group by 
+  shifttype
