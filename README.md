@@ -1,32 +1,34 @@
-# Retail Sales Analysis_EDA
+#  Retail Sales Analysis_EDA
 
 A complete SQL Server project that demonstrates the ETL (Extract, Transform, Load) pipeline and Exploratory Data Analysis (EDA) on retail sales data. This repository shows how to ingest raw CSVs, clean and transform them into analytics-ready tables, and answer key business questions using SQL queries.
 
-# Features
-ETL Process
-Create staging (mastertable) and gold (gold_mastertable) tables
-Bulk load CSV data into SQL Server
-Handle missing values (e.g., impute missing ages with average)
-Correct raw data issues (typos, null cleanup)
-Remove incomplete or invalid records
+# 📌 Features
+A) ETL Process
 
-# Exploratory Data Analysis (EDA)
-Sales by date and category
-High-value transactions (>1000)
-Top customers by total sales
-Category-wise unique customer counts
-Monthly average sales & best-selling months
-Gender-wise transaction counts
-Shift-wise sales trends (Morning, Afternoon, Evening)
+1) Create staging (mastertable) and gold (gold_mastertable) tables
+2) Bulk load CSV data into SQL Server
+3) Handle missing values (e.g., impute missing ages with average)
+4) Correct raw data issues (typos, null cleanup)
+5) Remove incomplete or invalid records
 
-# Tech Stack
+B) Exploratory Data Analysis (EDA)
+
+1) Sales by date and category
+2) High-value transactions (>1000)
+3) Top customers by total sales
+4) Category-wise unique customer counts
+5) Monthly average sales & best-selling months
+6) Gender-wise transaction counts
+7) Shift-wise sales trends (Morning, Afternoon, Evening)
+
+# 🛠️ Tech Stack
 Database: Microsoft SQL Server (2019 or later recommended)
 Language: T-SQL
 Data Source: CSV file (Retail Sales Transactions)
 
+# 📂 Repository Structure
 
-# Retail Sales Analysis_EDA/
-
+Retail Sales Analysis_EDA/
 ├── sql/
 │   ├── 01_create_db_and_tables.sql
 │   ├── 02_bulk_insert_staging.sql
@@ -37,7 +39,7 @@ Data Source: CSV file (Retail Sales Transactions)
 ├── README.md
 └── LICENSE
 
-# Sample EDA Queries
+# 📊 Sample EDA Queries
 
 # Total sales by category
 SELECT category, SUM(total_sale) AS TotalSales
@@ -63,6 +65,9 @@ WITH shifts AS (
 SELECT shift_type, COUNT(transactions_id) AS order_count
 FROM shifts
 GROUP BY shift_type;
+
+# 📄License
+This project is licensed under the MIT License
 
 # 🙌 Contribution
 
