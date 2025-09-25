@@ -28,16 +28,7 @@ Data Source: CSV file (Retail Sales Transactions)
 
 # 📂 Repository Structure
 
-Retail Sales Analysis_EDA/
-├── sql/
-│   ├── 01_create_db_and_tables.sql
-│   ├── 02_bulk_insert_staging.sql
-│   ├── 03_transform_to_gold.sql
-│   └── 04_eda_queries.sql
-├── data/
-│   └── retail_sales.csv    # (example path; not included in repo)
-├── README.md
-└── LICENSE
+![my image](https://github.com/AdityaK1197/Retail-Sales-Analysis_EDA/blob/b0896dc071d28ee3e44e3114f77819bc75345143/Repostructure.png)
 
 # 📊 Sample EDA Queries
 
