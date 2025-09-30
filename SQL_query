@@ -1,3 +1,5 @@
+
+
 ---------------------------------------------------------------------------------
 -- PHASE 1: ETL Process
 ---------------------------------------------------------------------------------
@@ -41,12 +43,13 @@ CREATE TABLE mastertable (
 -- Adjust CODEPAGE value depending on CSV encoding
 ---------------------------------------------------------------------------------
 BULK INSERT mastertable 
-FROM '[file location]Retail Sales Analysis_utf .csv'
+FROM 'pathRetail Sales Analysis\SQL - Retail Sales Analysis_utf .csv'
 WITH (
     FIRSTROW = 2,              -- Skip header row
     FIELDTERMINATOR = ',',     -- CSV delimiter
+	ROWTERMINATOR = '0X0a',
     TABLOCK,                   -- Faster bulk load
-    CODEPAGE = '0XX0a'         -- Encoding (verify correct codepage)
+    CODEPAGE = '65001'         -- Encoding (verify correct codepage)
 );
 
 ---------------------------------------------------------------------------------
